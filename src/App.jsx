@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 // --- Konstanta API dan Utility Functions ---
 
 // Gunakan kunci API kosong. Runtime akan menyediakannya.
-const apiKey = ""; 
+const apiKey = "AIzaSyBEoFZw9j3Xvti1ZoHqfwqSvG1LZRskjxk";
 const GEMINI_FLASH_MODEL = "gemini-2.5-flash-preview-05-20";
 const GEMINI_FLASH_IMAGE_MODEL = "gemini-2.5-flash-image-preview";
 const GEMINI_FLASH_TTS_MODEL = "gemini-2.5-flash-preview-tts";
