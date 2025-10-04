@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 // --- Konstanta API dan Utility Functions ---
 
 // Gunakan kunci API kosong. Runtime akan menyediakannya.
-const apiKey ="AIzaSyBEoFZw9j3Xvti1ZoHqfwqSvG1LZRskjxk";
+const apiKey = ""; 
 const GEMINI_FLASH_MODEL = "gemini-2.5-flash-preview-05-20";
 const GEMINI_FLASH_IMAGE_MODEL = "gemini-2.5-flash-image-preview";
 const GEMINI_FLASH_TTS_MODEL = "gemini-2.5-flash-preview-tts";
@@ -17,6 +17,8 @@ const CONCEPT_OPTIONS = [
 ];
 
 const ASPECT_RATIOS = [
+    // Kami tetap menampilkan opsi ini di UI, tetapi parameter ini dihapus dari payload API untuk mencegah error JSON.
+    // Gambar yang dihasilkan kemungkinan akan default ke 1:1.
     { id: '1:1', name: '1:1 (Kotak)' },
     { id: '4:5', name: '4:5 (IG Portrait)' },
     { id: '16:9', name: '16:9 (YouTube/Desktop)' },
@@ -180,7 +182,8 @@ const CopyButton = ({ textToCopy, label }) => {
 // --- Fungsi Panggilan API ---
 
 // 1. Image-to-Image Generation (Step 2)
-const fetchSingleImage = async (imageBase64, conceptPromptDetail, gender, aspectRatio) => {
+const fetchSingleImage = async (imageBase64, conceptPromptDetail, gender) => {
+    // Parameter aspectRatio dihapus dari payload karena model/endpoint ini tidak mendukungnya, yang menyebabkan error JSON.
     const prompt = `Generate a high-quality fashion promotional image for the uploaded product (focus on the main garment, like a shirt, dress, or pants). The model should be a person who looks like a ${gender} and styled according to the following concept description: ${conceptPromptDetail}. The model should be posing naturally in the setting. Ensure the final image looks like professional, high-end fashion photography.`;
 
     const fetcher = async () => {
@@ -196,12 +199,8 @@ const fetchSingleImage = async (imageBase64, conceptPromptDetail, gender, aspect
                     }
                 ]
             }],
-            // FIX: Mengubah 'config' menjadi 'generationConfig' untuk API yang benar
-            generationConfig: { 
-                imageGenerationConfig: {
-                    aspectRatio: aspectRatio,
-                }
-            }
+            // generationConfig Dihapus total untuk menghindari error JSON yang disebabkan oleh "Unknown name 'imageGenerationConfig'"
+            // Gambar akan dihasilkan dengan rasio default (kemungkinan 1:1)
         };
 
         const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_FLASH_IMAGE_MODEL}:generateContent?key=${apiKey}`;
@@ -386,8 +385,10 @@ const App = () => {
         setProgress(10); // Start: Initialization
 
         try {
+            // Kita tidak bisa menggunakan aspectRatio di sini karena menyebabkan error JSON.
+            // Kita akan menggunakan nilai default atau hasil inferensi model.
             const imagePromises = Array(4).fill(null).map((_, index) => 
-                fetchSingleImage(imageInput, currentConcept.prompt_detail, modelGender, selectedRatio).then(result => {
+                fetchSingleImage(imageInput, currentConcept.prompt_detail, modelGender).then(result => {
                     // Update progress after each successful image generation (10% increase per image)
                     setProgress(p => {
                         const nextProgress = p + 10;
@@ -404,7 +405,7 @@ const App = () => {
 
         } catch (e) {
             console.error(e);
-            setError(e.message || "Gagal dalam proses Image-to-Image Generation. Coba ganti konsep atau rasio.");
+            setError(e.message || "Gagal dalam proses Image-to-Image Generation. Coba ganti konsep.");
             setProgress(0);
         } finally {
             setLoading(false);
@@ -511,117 +512,117 @@ const App = () => {
         </div>
     );
 
-    const renderStep2 = () => (
-        <div className="space-y-6">
-            <h3 className="text-xl font-bold text-gray-800">Langkah 2: Konfigurasi & Generate Foto Produk</h3>
+    const renderStep2 = () => {
+        const selectedRatioDisplay = ASPECT_RATIOS.find(r => r.id === selectedRatio);
 
-            {/* Nama Produk */}
-            <div className="p-5 bg-white rounded-xl shadow-lg border border-gray-100">
-                <p className="font-semibold text-indigo-700 mb-2">Jenis Produk (Wajib diisi):</p>
-                <input
-                    type="text"
-                    placeholder="Contoh: Kemeja Oversize, Gaun Malam, Sneakers..."
-                    value={productType}
-                    onChange={(e) => setProductType(e.target.value)}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 transition"
-                />
-            </div>
-            
-            {/* Pilihan Rasio & Model */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        return (
+            <div className="space-y-6">
+                <h3 className="text-xl font-bold text-gray-800">Langkah 2: Konfigurasi & Generate Foto Produk</h3>
+
+                {/* Nama Produk */}
+                <div className="p-5 bg-white rounded-xl shadow-lg border border-gray-100">
+                    <p className="font-semibold text-indigo-700 mb-2">Jenis Produk (Wajib diisi):</p>
+                    <input
+                        type="text"
+                        placeholder="Contoh: Kemeja Oversize, Gaun Malam, Sneakers..."
+                        value={productType}
+                        onChange={(e) => setProductType(e.target.value)}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 transition"
+                    />
+                </div>
+                
+                {/* Pilihan Rasio & Model */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="p-5 bg-white rounded-xl shadow-lg border border-gray-100 space-y-3">
+                        <p className="font-semibold text-indigo-700">Pilih Rasio Gambar: <span className="text-sm text-red-500 font-normal">(Tidak Aktif saat ini)</span></p>
+                        <div className="grid grid-cols-4 gap-2">
+                            {ASPECT_RATIOS.map((ratio) => (
+                                <button
+                                    key={ratio.id}
+                                    onClick={() => setSelectedRatio(ratio.id)}
+                                    // Menonaktifkan tombol rasio karena parameter tidak dapat dikirim ke API
+                                    className={`p-2 rounded-lg text-sm transition border-2 font-medium bg-gray-200 text-gray-500 border-gray-300 cursor-not-allowed`}
+                                    disabled={true} 
+                                >
+                                    {ratio.name}
+                                </button>
+                            ))}
+                        </div>
+                        <p className="text-xs text-red-500 mt-2">Catatan: Fitur rasio dinonaktifkan untuk mencegah error JSON API.</p>
+                    </div>
+
+                    <div className="p-5 bg-white rounded-xl shadow-lg border border-gray-100 space-y-3">
+                        <p className="font-semibold text-indigo-700">Pilih Model:</p>
+                        <div className="flex space-x-4">
+                            {['Pria', 'Wanita'].map((gender) => (
+                                <label key={gender} className="flex items-center space-x-2 text-gray-700 cursor-pointer">
+                                    <input
+                                        type="radio"
+                                        name="modelGender"
+                                        value={gender}
+                                        checked={modelGender === gender}
+                                        onChange={() => setModelGender(gender)}
+                                        className="form-radio h-4 w-4 text-indigo-600"
+                                        disabled={loading}
+                                    />
+                                    <span>{gender}</span>
+                                </label>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Pilihan Konsep */}
                 <div className="p-5 bg-white rounded-xl shadow-lg border border-gray-100 space-y-3">
-                    <p className="font-semibold text-indigo-700">Pilih Rasio Gambar:</p>
-                    <div className="grid grid-cols-4 gap-2">
-                        {ASPECT_RATIOS.map((ratio) => (
+                    <p className="font-semibold text-indigo-700">Pilih Konsep Styling:</p>
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
+                        {CONCEPT_OPTIONS.map((concept) => (
                             <button
-                                key={ratio.id}
-                                onClick={() => setSelectedRatio(ratio.id)}
-                                className={`p-2 rounded-lg text-sm transition border-2 font-medium ${
-                                    selectedRatio === ratio.id
+                                key={concept.id}
+                                onClick={() => setSelectedConcept(concept.id)}
+                                className={`p-3 rounded-xl transition duration-200 text-sm font-medium border-2 ${
+                                    selectedConcept === concept.id
                                         ? 'bg-indigo-600 text-white border-indigo-700 shadow-md'
-                                        : 'bg-gray-100 text-gray-700 border-gray-200 hover:bg-gray-200'
+                                        : 'bg-gray-100 text-gray-700 border-gray-200 hover:bg-indigo-50 hover:border-indigo-400'
                                 }`}
                                 disabled={loading}
                             >
-                                {ratio.name}
+                                {concept.name}
                             </button>
                         ))}
                     </div>
                 </div>
-
-                <div className="p-5 bg-white rounded-xl shadow-lg border border-gray-100 space-y-3">
-                    <p className="font-semibold text-indigo-700">Pilih Model:</p>
-                    <div className="flex space-x-4">
-                        {['Pria', 'Wanita'].map((gender) => (
-                            <label key={gender} className="flex items-center space-x-2 text-gray-700 cursor-pointer">
-                                <input
-                                    type="radio"
-                                    name="modelGender"
-                                    value={gender}
-                                    checked={modelGender === gender}
-                                    onChange={() => setModelGender(gender)}
-                                    className="form-radio h-4 w-4 text-indigo-600"
-                                    disabled={loading}
-                                />
-                                <span>{gender}</span>
-                            </label>
-                        ))}
+                
+                {/* Tombol Generate */}
+                {loading && progress < 50 ? (
+                    <div className="p-5 bg-indigo-50 rounded-xl shadow-inner">
+                        <ProgressBar progress={progress} loadingText="Fase 1/3: Membuat Foto Produk AI (4 Gambar)..." />
                     </div>
-                </div>
+                ) : (
+                    <button
+                        onClick={handleGenerateImages}
+                        disabled={!imageInput || !selectedConcept || loading || !productType.trim()}
+                        className="w-full py-3 bg-green-600 text-white font-bold rounded-xl shadow-lg hover:bg-green-700 transition disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center"
+                    >
+                        <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd"></path></svg>
+                        Generate 4 Foto Produk AI
+                    </button>
+                )}
+                
+                {(currentConcept || productType) && (
+                    <div className="p-3 bg-indigo-50 rounded-xl border border-indigo-200 text-center">
+                        <p className="text-sm font-semibold text-indigo-700">
+                            Detail: **{productType || 'Belum Diisi'}** | Model: **{modelGender}** | Konsep: **{currentConcept?.name || 'Belum Dipilih'}** | Rasio Aktif: **1:1 (Default)**
+                        </p>
+                    </div>
+                )}
             </div>
-
-            {/* Pilihan Konsep */}
-            <div className="p-5 bg-white rounded-xl shadow-lg border border-gray-100 space-y-3">
-                <p className="font-semibold text-indigo-700">Pilih Konsep Styling:</p>
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
-                    {CONCEPT_OPTIONS.map((concept) => (
-                        <button
-                            key={concept.id}
-                            onClick={() => setSelectedConcept(concept.id)}
-                            className={`p-3 rounded-xl transition duration-200 text-sm font-medium border-2 ${
-                                selectedConcept === concept.id
-                                    ? 'bg-indigo-600 text-white border-indigo-700 shadow-md'
-                                    : 'bg-gray-100 text-gray-700 border-gray-200 hover:bg-indigo-50 hover:border-indigo-400'
-                            }`}
-                            disabled={loading}
-                        >
-                            {concept.name}
-                        </button>
-                    ))}
-                </div>
-            </div>
-            
-            {/* Tombol Generate */}
-            {loading && progress < 50 ? (
-                <div className="p-5 bg-indigo-50 rounded-xl shadow-inner">
-                    <ProgressBar progress={progress} loadingText="Fase 1/3: Membuat Foto Produk AI (4 Gambar)..." />
-                </div>
-            ) : (
-                <button
-                    onClick={handleGenerateImages}
-                    disabled={!imageInput || !selectedConcept || loading || !productType.trim()}
-                    className="w-full py-3 bg-green-600 text-white font-bold rounded-xl shadow-lg hover:bg-green-700 transition disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center"
-                >
-                    <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd"></path></svg>
-                    Generate 4 Foto Produk AI
-                </button>
-            )}
-            
-            {(currentConcept || productType) && (
-                <div className="p-3 bg-indigo-50 rounded-xl border border-indigo-200 text-center">
-                    <p className="text-sm font-semibold text-indigo-700">
-                        Detail: **{productType || 'Belum Diisi'}** | Model: **{modelGender}** | Konsep: **{currentConcept?.name || 'Belum Dipilih'}**
-                    </p>
-                </div>
-            )}
-        </div>
-    );
+        );
+    }
 
     const renderSteps3And4 = () => {
-        const getAspectRatio = (ratio) => {
-            const [w, h] = ratio.split(':').map(Number);
-            return w / h;
-        };
+        // Karena kontrol rasio dinonaktifkan, kita asumsikan rasio output adalah 1:1
+        const getAspectRatio = (ratio) => 1 / 1; 
         const safeProductType = productType.trim().replace(/\s/g, '_').toLowerCase() || 'produk';
 
         return (
@@ -632,7 +633,7 @@ const App = () => {
                 <div className="bg-white p-5 rounded-xl shadow-lg border border-gray-100">
                     <p className="font-semibold text-indigo-600 mb-4 flex justify-between items-center">
                         <span>Foto Produk AI ({generatedImages.length} Hasil)</span>
-                        {generatedImages.length > 0 && <span className="text-sm text-gray-500">Rasio: {selectedRatio}</span>}
+                        {generatedImages.length > 0 && <span className="text-sm text-gray-500">Rasio: 1:1 (Default)</span>}
                     </p>
                     {generatedImages.length > 0 ? (
                         <div className="grid grid-cols-2 gap-4">
@@ -824,3 +825,4 @@ const App = () => {
 };
 
 export default App;
+
