@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 // --- Konstanta API dan Utility Functions ---
 
 // Gunakan kunci API kosong. Runtime akan menyediakannya.
-const apiKey = "AIzaSyBEoFZw9j3Xvti1ZoHqfwqSvG1LZRskjxk";
+const apiKey = ""; 
 const GEMINI_FLASH_MODEL = "gemini-2.5-flash-preview-05-20";
 const GEMINI_FLASH_IMAGE_MODEL = "gemini-2.5-flash-image-preview";
 const GEMINI_FLASH_TTS_MODEL = "gemini-2.5-flash-preview-tts";
@@ -145,7 +145,7 @@ const DownloadButton = ({ url, filename, label, className }) => (
     </a>
 );
 
-// New: Component untuk menyalin teks
+// Component untuk menyalin teks
 const CopyButton = ({ textToCopy, label }) => {
     const [copied, setCopied] = useState(false);
 
@@ -196,7 +196,8 @@ const fetchSingleImage = async (imageBase64, conceptPromptDetail, gender, aspect
                     }
                 ]
             }],
-            config: {
+            // FIX: Mengubah 'config' menjadi 'generationConfig' untuk API yang benar
+            generationConfig: { 
                 imageGenerationConfig: {
                     aspectRatio: aspectRatio,
                 }
