@@ -17,7 +17,7 @@ const productNameInput = document.getElementById('product-name');
 const productTypeSelect = document.getElementById('product-type');
 const customBgText = document.getElementById('custom-background-text');
 const backgroundSelect = document.getElementById('background-select');
-const ratioSelect = document.getElementById('ratio-select');
+// ratioSelect has been removed as it's now fixed.
 
 // Face Reference Inputs
 const faceReferenceContainer = document.getElementById('face-reference-container');
@@ -148,12 +148,11 @@ form.addEventListener('submit', async (e) => {
 
 // --- Admin Modal Logic ---
 adminBtn.addEventListener('click', () => {
-    // *** FIX: Reset the modal state every time it's opened ***
-    passwordInput.value = ''; // Clear password field
-    loginError.classList.add('hidden'); // Hide any previous errors
-    loginView.classList.remove('hidden'); // Always show login view first
-    settingsView.classList.add('hidden'); // Hide settings view
-    adminModal.style.display = 'flex'; // Show the modal
+    passwordInput.value = '';
+    loginError.classList.add('hidden');
+    loginView.classList.remove('hidden');
+    settingsView.classList.add('hidden');
+    adminModal.style.display = 'flex';
 });
 
 closeModalBtn.addEventListener('click', () => adminModal.style.display = 'none');
@@ -165,7 +164,6 @@ saveSettingsBtn.addEventListener('click', () => {
 
 loginForm.addEventListener('submit', (e) => {
     e.preventDefault();
-    // The correct password is 'admin123'
     if (passwordInput.value === 'admin123') {
         loginView.classList.add('hidden');
         settingsView.classList.remove('hidden');
@@ -221,7 +219,7 @@ async function generateContent() {
             productType: productTypeSelect.value,
             concept: selectedConcepts.join(', '),
             model: modelValue,
-            ratio: ratioSelect.value,
+            ratio: "9:16", // *** FIX: Hardcoded aspect ratio for TikTok ***
             backgroundType: backgroundSelect.value,
             customBackground: customBgText.value,
             imageBase64: uploadedImageBase64,
@@ -300,20 +298,24 @@ async function generateImage({ productName, productType, concept, model, ratio, 
     const modelGender = (model === 'Wanita') ? 'female' : 'male';
     const parts = [];
     
+    const ratioInstruction = `The final image must have a ${ratio} aspect ratio.`;
+
     if (model === 'Referensi' && faceBase64) {
-         prompt = `A professional fashion photograph. The model should be wearing the product from the FIRST image. The model's face MUST realistically and accurately match the face of the person in the SECOND reference image. The photo has a combined concept of "${concept}". The setting is ${backgroundPrompt}. Final image: photorealistic, high-detail, fashion editorial style. The model is an Indonesian person.`;
+         prompt = `A professional fashion photograph. The model should be wearing the product from the FIRST image. The model's face MUST realistically and accurately match the face of the person in the SECOND reference image. The photo has a combined concept of "${concept}". The setting is ${backgroundPrompt}. Final image: photorealistic, high-detail, fashion editorial style. The model is an Indonesian person. ${ratioInstruction}`;
          parts.push({ text: prompt });
          parts.push({ inlineData: { mimeType: "image/jpeg", data: imageBase64 } });
          parts.push({ inlineData: { mimeType: "image/jpeg", data: faceBase64 } });
     } else {
-         prompt = `A professional fashion photograph of a realistic ${modelGender} Indonesian model. The model is wearing the uploaded product: a ${productName} (${productType}). The photo has a combined concept of "${concept}". The setting is ${backgroundPrompt}. The final image should be photorealistic, high-detail, fashion editorial style.`;
+         prompt = `A professional fashion photograph of a realistic ${modelGender} Indonesian model. The model is wearing the uploaded product: a ${productName} (${productType}). The photo has a combined concept of "${concept}". The setting is ${backgroundPrompt}. The final image should be photorealistic, high-detail, fashion editorial style. ${ratioInstruction}`;
          parts.push({ text: prompt });
          parts.push({ inlineData: { mimeType: "image/jpeg", data: imageBase64 } });
     }
     
     const payload = {
         contents: [{ parts: parts }],
-        generationConfig: { responseModalities: ['IMAGE'], aspectRatio: ratio.replace(':', '_') },
+        generationConfig: { 
+            responseModalities: ['IMAGE']
+        },
     };
     
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:generateContent?key=${getApiKey()}`;
