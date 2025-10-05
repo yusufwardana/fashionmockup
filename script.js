@@ -1,14 +1,10 @@
-// script.js
-// File ini berisi semua logika JavaScript untuk aplikasi AI Fashion Content Simulator.
-
 // --- DOM Elements ---
 const form = document.getElementById('content-form');
-const generateBtn = document.getElementById('generate-btn');
-const btnText = document.getElementById('btn-text');
+const generateFotoBtn = document.getElementById('generate-foto-btn');
 const btnSpinner = document.getElementById('btn-spinner');
 const errorMessage = document.getElementById('error-message');
 
-// Inputs
+// Input Elements
 const imageInput = document.getElementById('product-image');
 const imageDropZone = document.getElementById('image-drop-zone');
 const imagePreviewContainer = document.getElementById('image-preview-container');
@@ -17,31 +13,45 @@ const productNameInput = document.getElementById('product-name');
 const productTypeSelect = document.getElementById('product-type');
 const customBgText = document.getElementById('custom-background-text');
 const backgroundSelect = document.getElementById('background-select');
-// ratioSelect has been removed as it's now fixed.
-
-// Face Reference Inputs
 const faceReferenceContainer = document.getElementById('face-reference-container');
 const faceImageInput = document.getElementById('face-image');
 const facePreviewContainer = document.getElementById('face-preview-container');
 const facePreview = document.getElementById('face-preview');
 
-// Outputs
+// Output Sections and Containers
 const placeholder = document.getElementById('placeholder');
-const resultsContainer = document.getElementById('results');
+const imageResultSection = document.getElementById('image-result-section');
 const generatedImage = document.getElementById('generated-image');
+const imageLoader = document.getElementById('image-loader');
+const manualControls = document.getElementById('manual-controls');
+
+// Manual Control Buttons
+const generateDeskripsiBtn = document.getElementById('generate-deskripsi-btn');
+const generateNarasiBtn = document.getElementById('generate-narasi-btn');
+const generatePromptBtn = document.getElementById('generate-prompt-btn');
+const generateAudioBtn = document.getElementById('generate-audio-btn');
+const copyPromptBtn = document.getElementById('copy-prompt-btn');
+
+// Manual Control Result Sections
+const deskripsiResultSection = document.getElementById('deskripsi-result-section');
+const narasiResultSection = document.getElementById('narasi-result-section');
+const promptResultSection = document.getElementById('prompt-result-section');
+const audioResultSection = document.getElementById('audio-result-section');
+
+// Manual Control Loaders and Content
+const captionLoader = document.getElementById('caption-loader');
 const tiktokCaption = document.getElementById('tiktok-caption');
+const narrativeLoader = document.getElementById('narrative-loader');
 const narrativeText = document.getElementById('narrative-text');
+const promptLoader = document.getElementById('prompt-loader');
+const promptContent = document.getElementById('prompt-content');
+const videoPrompt = document.getElementById('video-prompt');
+const audioMaleLoader = document.getElementById('audio-male-loader');
 const audioPlayerMale = document.getElementById('audio-player-male');
+const audioFemaleLoader = document.getElementById('audio-female-loader');
 const audioPlayerFemale = document.getElementById('audio-player-female');
 
-// Loaders
-const imageLoader = document.getElementById('image-loader');
-const captionLoader = document.getElementById('caption-loader');
-const narrativeLoader = document.getElementById('narrative-loader');
-const audioMaleLoader = document.getElementById('audio-male-loader');
-const audioFemaleLoader = document.getElementById('audio-female-loader');
-
-// Admin Modal
+// Admin Modal Elements
 const adminModal = document.getElementById('admin-modal');
 const adminBtn = document.getElementById('admin-btn');
 const closeModalBtn = document.getElementById('close-modal-btn');
@@ -53,12 +63,26 @@ const settingsView = document.getElementById('settings-view');
 const apiKeyInput = document.getElementById('api-key');
 const saveSettingsBtn = document.getElementById('save-settings-btn');
 
+// State Variables
 let uploadedImageBase64 = null;
 let faceReferenceBase64 = null;
+let currentFormData = null;
+
+// --- Helper Functions ---
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+const toggleSectionLoading = (button, loader, contentSection, isLoading) => {
+    if (button) button.disabled = isLoading;
+    if (isLoading) {
+        loader.style.display = 'block';
+        if (contentSection) contentSection.style.display = 'none';
+    } else {
+        loader.style.display = 'none';
+        if (contentSection) contentSection.style.display = 'block';
+    }
+};
 
 // --- Event Listeners ---
-
-// Product Image Upload
 const handleProductFiles = (files) => {
     const file = files[0];
     if (file && file.type.startsWith('image/')) {
@@ -77,15 +101,8 @@ imageInput.addEventListener('change', (e) => handleProductFiles(e.target.files))
 ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
     imageDropZone.addEventListener(eventName, (e) => { e.preventDefault(); e.stopPropagation(); });
 });
-['dragenter', 'dragover'].forEach(eventName => {
-    imageDropZone.addEventListener(eventName, () => imageDropZone.classList.add('border-indigo-500', 'bg-indigo-50'));
-});
-['dragleave', 'drop'].forEach(eventName => {
-    imageDropZone.addEventListener(eventName, () => imageDropZone.classList.remove('border-indigo-500', 'bg-indigo-50'));
-});
 imageDropZone.addEventListener('drop', (e) => handleProductFiles(e.dataTransfer.files));
 
-// Face Image Upload
 faceImageInput.addEventListener('change', (e) => {
     const file = e.target.files[0];
     if (file && file.type.startsWith('image/')) {
@@ -94,13 +111,11 @@ faceImageInput.addEventListener('change', (e) => {
             faceReferenceBase64 = ev.target.result.split(',')[1];
             facePreview.src = ev.target.result;
             facePreviewContainer.classList.remove('hidden');
-            errorMessage.textContent = '';
         };
         reader.readAsDataURL(file);
     }
 });
 
-// Toggle Face Reference Input
 document.querySelectorAll('input[name="model"]').forEach(radio => {
     radio.addEventListener('change', (e) => {
         if (e.target.value === 'Referensi') {
@@ -114,16 +129,11 @@ document.querySelectorAll('input[name="model"]').forEach(radio => {
     });
 });
 
-// Toggle Custom Background Textarea
 backgroundSelect.addEventListener('change', (e) => {
-    if (e.target.value === 'custom') {
-        customBgText.classList.remove('hidden');
-    } else {
-        customBgText.classList.add('hidden');
-    }
+    customBgText.classList.toggle('hidden', e.target.value !== 'custom');
 });
 
-// Form Submission
+// Main form submission for generating the image
 form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const selectedConcepts = Array.from(document.querySelectorAll('input[name="concept"]:checked'));
@@ -143,8 +153,134 @@ form.addEventListener('submit', async (e) => {
     }
 
     errorMessage.textContent = '';
-    await generateContent();
+    
+    currentFormData = {
+        productName: productNameInput.value,
+        productType: productTypeSelect.value,
+        concept: selectedConcepts.map(cb => cb.value).join(', '),
+        model: selectedModel,
+        backgroundType: backgroundSelect.value,
+        customBackground: customBgText.value,
+        imageBase64: uploadedImageBase64,
+        faceBase64: faceReferenceBase64
+    };
+
+    try {
+        const currentApiKey = getApiKey();
+        generateFotoBtn.disabled = true;
+        btnSpinner.classList.remove('hidden');
+        placeholder.classList.add('hidden');
+        manualControls.classList.add('hidden');
+        imageResultSection.classList.remove('hidden');
+        imageLoader.style.display = 'flex';
+        generatedImage.classList.add('hidden');
+
+        const imageResult = await generateImage(currentFormData, currentApiKey);
+
+        if (imageResult) {
+            generatedImage.src = imageResult;
+            generatedImage.onload = () => {
+                imageLoader.style.display = 'none';
+                generatedImage.classList.remove('hidden');
+                manualControls.classList.remove('hidden'); // Show next steps
+            };
+        } else {
+            throw new Error('Gagal membuat gambar.');
+        }
+
+    } catch (error) {
+        errorMessage.textContent = `Error: ${error.message}`;
+        imageResultSection.classList.add('hidden');
+        placeholder.classList.remove('hidden');
+    } finally {
+        generateFotoBtn.disabled = false;
+        btnSpinner.classList.add('hidden');
+    }
 });
+
+
+// --- Event Listeners for Manual Controls ---
+generateDeskripsiBtn.addEventListener('click', async () => {
+    deskripsiResultSection.classList.remove('hidden');
+    toggleSectionLoading(generateDeskripsiBtn, captionLoader, tiktokCaption, true);
+    try {
+        const result = await generateCaption(currentFormData, getApiKey());
+        tiktokCaption.textContent = result;
+    } catch (error) {
+        tiktokCaption.textContent = `Gagal membuat deskripsi: ${error.message}`;
+    } finally {
+        toggleSectionLoading(generateDeskripsiBtn, captionLoader, tiktokCaption, false);
+    }
+});
+
+generateNarasiBtn.addEventListener('click', async () => {
+    narasiResultSection.classList.remove('hidden');
+    toggleSectionLoading(generateNarasiBtn, narrativeLoader, narrativeText, true);
+    try {
+        const result = await generateNarrative(currentFormData, getApiKey());
+        narrativeText.textContent = result;
+        generateAudioBtn.disabled = false; // Enable audio generation
+    } catch (error) {
+        narrativeText.textContent = `Gagal membuat narasi: ${error.message}`;
+    } finally {
+        toggleSectionLoading(generateNarasiBtn, narrativeLoader, narrativeText, false);
+    }
+});
+
+generatePromptBtn.addEventListener('click', async () => {
+    promptResultSection.classList.remove('hidden');
+    toggleSectionLoading(generatePromptBtn, promptLoader, promptContent, true);
+    try {
+        const result = await generateVideoPrompt(currentFormData, getApiKey());
+        videoPrompt.value = result;
+    } catch (error) {
+        videoPrompt.value = `Gagal membuat prompt: ${error.message}`;
+    } finally {
+        toggleSectionLoading(generatePromptBtn, promptLoader, promptContent, false);
+    }
+});
+
+copyPromptBtn.addEventListener('click', () => {
+    videoPrompt.select();
+    document.execCommand('copy');
+    copyPromptBtn.textContent = 'Tersalin!';
+    setTimeout(() => { copyPromptBtn.textContent = 'Salin Teks'; }, 2000);
+});
+
+generateAudioBtn.addEventListener('click', async () => {
+    audioResultSection.classList.remove('hidden');
+    generateAudioBtn.disabled = true;
+    audioMaleLoader.style.display = 'block';
+    audioFemaleLoader.style.display = 'block';
+    audioPlayerMale.classList.add('hidden');
+    audioPlayerFemale.classList.add('hidden');
+
+    const script = narrativeText.textContent;
+    if (!script || script.startsWith('Gagal')) {
+        errorMessage.textContent = "Tidak ada narasi valid untuk dibuat audio.";
+        return;
+    }
+
+    try {
+        const [maleAudioUrl, femaleAudioUrl] = await Promise.all([
+            generateTTS(script, 'male', getApiKey()),
+            generateTTS(script, 'female', getApiKey())
+        ]);
+        
+        audioPlayerMale.src = maleAudioUrl;
+        audioMaleLoader.style.display = 'none';
+        audioPlayerMale.classList.remove('hidden');
+
+        audioPlayerFemale.src = femaleAudioUrl;
+        audioFemaleLoader.style.display = 'none';
+        audioPlayerFemale.classList.remove('hidden');
+    } catch (error) {
+        errorMessage.textContent = `Gagal membuat audio: ${error.message}`;
+        audioMaleLoader.style.display = 'none';
+        audioFemaleLoader.style.display = 'none';
+    }
+});
+
 
 // --- Admin Modal Logic ---
 adminBtn.addEventListener('click', () => {
@@ -156,12 +292,10 @@ adminBtn.addEventListener('click', () => {
 });
 
 closeModalBtn.addEventListener('click', () => adminModal.style.display = 'none');
-
 saveSettingsBtn.addEventListener('click', () => { 
     localStorage.setItem('geminiApiKey', apiKeyInput.value);
     adminModal.style.display = 'none'; 
 });
-
 loginForm.addEventListener('submit', (e) => {
     e.preventDefault();
     if (passwordInput.value === 'admin123') {
@@ -173,97 +307,12 @@ loginForm.addEventListener('submit', (e) => {
         loginError.classList.remove('hidden');
     }
 });
-
-// On page load, check for saved API key
 document.addEventListener('DOMContentLoaded', () => {
     apiKeyInput.value = localStorage.getItem('geminiApiKey') || '';
 });
 
 
 // --- Core AI Functions ---
-
-function getApiKey() { 
-    const key = localStorage.getItem('geminiApiKey');
-    if (!key || key.trim() === '') {
-        errorMessage.textContent = 'API Key belum diatur. Silakan atur di menu Admin.';
-        throw new Error('API Key is not set.');
-    }
-    return key;
-}
-
-function setUiLoading(isLoading) {
-    generateBtn.disabled = isLoading;
-    if (isLoading) {
-        btnText.classList.add('hidden');
-        btnSpinner.classList.remove('hidden');
-        placeholder.classList.add('hidden');
-        resultsContainer.classList.remove('hidden');
-        [imageLoader, captionLoader, narrativeLoader, audioMaleLoader, audioFemaleLoader].forEach(el => el.style.display = 'flex');
-        [generatedImage, tiktokCaption, narrativeText, audioPlayerMale, audioPlayerFemale].forEach(el => el.classList.add('hidden'));
-    } else {
-        btnText.classList.remove('hidden');
-        btnSpinner.classList.add('hidden');
-    }
-}
-
-async function generateContent() {
-    try {
-        getApiKey(); // Check if key exists before starting
-        setUiLoading(true);
-
-        const selectedConcepts = Array.from(document.querySelectorAll('input[name="concept"]:checked')).map(cb => cb.value);
-        const modelValue = document.querySelector('input[name="model"]:checked').value;
-        
-        const formData = {
-            productName: productNameInput.value,
-            productType: productTypeSelect.value,
-            concept: selectedConcepts.join(', '),
-            model: modelValue,
-            ratio: "9:16", // *** FIX: Hardcoded aspect ratio for TikTok ***
-            backgroundType: backgroundSelect.value,
-            customBackground: customBgText.value,
-            imageBase64: uploadedImageBase64,
-            faceBase64: faceReferenceBase64
-        };
-
-        const textPromise = generateText(formData);
-        const imagePromise = generateImage(formData);
-        const [textResult, imageResult] = await Promise.all([textPromise, imagePromise]);
-
-        tiktokCaption.textContent = textResult.caption;
-        narrativeText.textContent = textResult.script;
-        captionLoader.style.display = 'none'; narrativeLoader.style.display = 'none';
-        tiktokCaption.classList.remove('hidden'); narrativeText.classList.remove('hidden');
-
-        const maleTtsPromise = generateTTS(textResult.script, 'male');
-        const femaleTtsPromise = generateTTS(textResult.script, 'female');
-
-        if (imageResult) {
-            generatedImage.src = imageResult;
-            generatedImage.onload = () => {
-                 imageLoader.style.display = 'none';
-                 generatedImage.classList.remove('hidden');
-            };
-        } else { throw new Error('Image generation failed.'); }
-       
-        const [maleAudioUrl, femaleAudioUrl] = await Promise.all([maleTtsPromise, femaleTtsPromise]);
-
-        audioPlayerMale.src = maleAudioUrl;
-        audioMaleLoader.style.display = 'none'; audioPlayerMale.classList.remove('hidden');
-        
-        audioPlayerFemale.src = femaleAudioUrl;
-        audioFemaleLoader.style.display = 'none'; audioPlayerFemale.classList.remove('hidden');
-
-    } catch (error) {
-        console.error('Error generating content:', error);
-        errorMessage.textContent = `Terjadi kesalahan: ${error.message}`;
-        placeholder.classList.remove('hidden');
-        resultsContainer.classList.add('hidden');
-    } finally {
-        setUiLoading(false);
-    }
-}
-
 async function makeApiCall(url, payload) {
      const response = await fetch(url, {
         method: 'POST',
@@ -272,110 +321,90 @@ async function makeApiCall(url, payload) {
      });
      if (!response.ok) {
         const errorBody = await response.json();
-        console.error("API Error:", errorBody);
-        throw new Error(errorBody.error?.message || `API request failed with status ${response.status}`);
+        throw new Error(errorBody.error?.message || `API request failed: ${response.status}`);
      }
      return response.json();
 }
 
-async function generateImage({ productName, productType, concept, model, ratio, backgroundType, customBackground, imageBase64, faceBase64 }) {
+async function generateImage({ imageBase64, faceBase64, productName, productType, concept, model, backgroundType, customBackground }, currentApiKey) {
     const conceptPrompts = {
-        "Minimalis Tropis": "a minimalist tropical setting, lush green leaves, natural light, clean background",
-        "Dramatik & Berani": "dramatic, high-contrast lighting, bold shadows, intense mood, with textures like smoke or fabric",
-        "Elegan & Profesional": "a sophisticated indoor setting like a modern office or luxury apartment, soft and elegant lighting",
-        "Urban Streetwear": "a city street, graffiti wall, neon lights, urban environment, dynamic pose",
-        "Studio Minimalis": "a clean photo studio with a simple solid color background, professional studio lighting",
+        "Minimalis Tropis": "a minimalist tropical setting, lush green leaves, natural light",
+        "Dramatik & Berani": "dramatic, high-contrast lighting, bold shadows, intense mood",
+        "Elegan & Profesional": "a sophisticated indoor setting, soft and elegant lighting",
+        "Urban Streetwear": "a city street, graffiti wall, neon lights, dynamic pose",
+        "Studio Minimalis": "a clean photo studio with a simple solid color background",
     };
-    
-    const concepts = concept.split(', ').filter(c => c);
-    const backgroundDetails = concepts.map(c => conceptPrompts[c]).filter(p => p).join(', blending elements of ');
-    let backgroundPrompt = backgroundDetails;
-    if (backgroundType === 'custom' && customBackground) {
-        backgroundPrompt = `a custom background: ${customBackground}`;
-    }
+    const backgroundDetails = concept.split(', ').map(c => conceptPrompts[c]).filter(Boolean).join(', blending elements of ');
+    let backgroundPrompt = backgroundType === 'custom' && customBackground ? `a custom background: ${customBackground}` : backgroundDetails;
 
-    let prompt;
     const modelGender = (model === 'Wanita') ? 'female' : 'male';
+    const ratioInstruction = "The final image must have a 9:16 aspect ratio.";
+    let prompt;
     const parts = [];
-    
-    const ratioInstruction = `The final image must have a ${ratio} aspect ratio.`;
 
     if (model === 'Referensi' && faceBase64) {
-         prompt = `A professional fashion photograph. The model should be wearing the product from the FIRST image. The model's face MUST realistically and accurately match the face of the person in the SECOND reference image. The photo has a combined concept of "${concept}". The setting is ${backgroundPrompt}. Final image: photorealistic, high-detail, fashion editorial style. The model is an Indonesian person. ${ratioInstruction}`;
-         parts.push({ text: prompt });
-         parts.push({ inlineData: { mimeType: "image/jpeg", data: imageBase64 } });
-         parts.push({ inlineData: { mimeType: "image/jpeg", data: faceBase64 } });
+         prompt = `Professional fashion photo. A model wearing the product from the FIRST image. The model's face MUST realistically match the person in the SECOND reference image. Concept: "${concept}". Setting: ${backgroundPrompt}. Style: photorealistic, high-detail, Indonesian model. ${ratioInstruction}`;
+         parts.push({ text: prompt }, { inlineData: { mimeType: "image/jpeg", data: imageBase64 } }, { inlineData: { mimeType: "image/jpeg", data: faceBase64 } });
     } else {
-         prompt = `A professional fashion photograph of a realistic ${modelGender} Indonesian model. The model is wearing the uploaded product: a ${productName} (${productType}). The photo has a combined concept of "${concept}". The setting is ${backgroundPrompt}. The final image should be photorealistic, high-detail, fashion editorial style. ${ratioInstruction}`;
-         parts.push({ text: prompt });
-         parts.push({ inlineData: { mimeType: "image/jpeg", data: imageBase64 } });
+         prompt = `Professional fashion photo of a realistic ${modelGender} Indonesian model wearing the uploaded ${productType} product. Concept: "${concept}". Setting: ${backgroundPrompt}. Style: photorealistic, high-detail. ${ratioInstruction}`;
+         parts.push({ text: prompt }, { inlineData: { mimeType: "image/jpeg", data: imageBase64 } });
     }
     
-    const payload = {
-        contents: [{ parts: parts }],
-        generationConfig: { 
-            responseModalities: ['IMAGE']
-        },
-    };
-    
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:generateContent?key=${getApiKey()}`;
+    const payload = { contents: [{ parts }], generationConfig: { responseModalities: ['IMAGE'] } };
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:generateContent?key=${currentApiKey}`;
     const result = await makeApiCall(apiUrl, payload);
     const base64Data = result?.candidates?.[0]?.content?.parts?.find(p => p.inlineData)?.inlineData?.data;
-    if (!base64Data) { throw new Error("Could not extract image data from API response."); }
+    if (!base64Data) throw new Error("Could not extract image data from API response.");
     return `data:image/png;base64,${base64Data}`;
 }
 
-async function generateText({ productName, productType, concept, model }) {
-    const prompt = `You are a social media manager for a fashion brand in Indonesia. Create content for the product "${productName}" (${productType}). The photo concept is "${concept}" with a ${model} model. Your tasks: 1. Create a TikTok caption (2-3 sentences, casual, persuasive, with engaging emojis, for a young Indonesian audience). 2. Create a promotional script (approx. 20 seconds, natural speaking style like a friend, suitable for a Reels/TikTok voice-over). Provide the output in JSON format with keys "caption" and "script".`;
-    const payload = {
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: {
-            responseMimeType: "application/json",
-            responseSchema: {
-                type: "OBJECT",
-                properties: {
-                    caption: { type: "STRING", description: "A short and catchy TikTok caption." },
-                    script: { type: "STRING", description: "A 20-second promotional script." }
-                },
-                required: ["caption", "script"]
-            }
-        }
-    };
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${getApiKey()}`;
+async function generateCaption({ productName, concept }, currentApiKey) {
+    const prompt = `Buatkan caption TikTok (2-3 kalimat, casual, persuasif, dengan emoji) untuk produk "${productName}" dengan konsep foto "${concept}" untuk audiens muda Indonesia.`;
+    const payload = { contents: [{ parts: [{ text: prompt }] }] };
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${currentApiKey}`;
     const result = await makeApiCall(apiUrl, payload);
-    const jsonText = result.candidates[0].content.parts[0].text;
-    return JSON.parse(jsonText);
+    return result.candidates[0].content.parts[0].text;
 }
 
-async function generateTTS(text, gender) {
+async function generateNarrative({ productName, concept }, currentApiKey) {
+    const prompt = `Buatkan narasi promosi (sekitar 20 detik, gaya bicara natural seperti teman) untuk voice-over video TikTok/Reels. Produknya adalah "${productName}" dengan konsep visual "${concept}".`;
+    const payload = { contents: [{ parts: [{ text: prompt }] }] };
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${currentApiKey}`;
+    const result = await makeApiCall(apiUrl, payload);
+    return result.candidates[0].content.parts[0].text;
+}
+
+async function generateVideoPrompt({ productName, concept }, currentApiKey) {
+    const prompt = `Berikan 3 ide prompt video pendek yang kreatif dalam format daftar bernomor untuk promosi TikTok/Reels. Produknya adalah "${productName}" dengan konsep "${concept}". Setiap prompt harus menjelaskan adegan dan angle kamera secara singkat.`;
+    const payload = { contents: [{ parts: [{ text: prompt }] }] };
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${currentApiKey}`;
+    const result = await makeApiCall(apiUrl, payload);
+    return result.candidates[0].content.parts[0].text;
+}
+
+async function generateTTS(text, gender, currentApiKey) {
     const voiceName = gender === 'male' ? 'Kore' : 'Puck';
-    const promptInstruction = gender === 'male' ? 'Say with a relaxed and confident tone' : 'Say with a gentle and energetic tone';
-    
+    const promptInstruction = gender === 'male' ? 'Katakan dengan nada santai dan percaya diri' : 'Katakan dengan nada lembut dan bersemangat';
     const payload = {
         contents: [{ parts: [{ text: `${promptInstruction}: ${text}` }] }],
-        generationConfig: {
-            responseModalities: ["AUDIO"],
-            speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: voiceName } } }
-        },
+        generationConfig: { responseModalities: ["AUDIO"], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName } } } },
         model: "gemini-2.5-flash-preview-tts"
     };
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${getApiKey()}`;
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${currentApiKey}`;
     const result = await makeApiCall(apiUrl, payload);
     const part = result?.candidates?.[0]?.content?.parts?.[0];
-    if (!part || !part.inlineData || !part.inlineData.data) { throw new Error(`TTS generation failed for ${gender}.`); }
+    if (!part?.inlineData?.data) throw new Error(`TTS generation failed for ${gender}.`);
     
-    const audioData = part.inlineData.data;
-    const mimeType = part.inlineData.mimeType;
-    const sampleRate = parseInt(mimeType.match(/rate=(\d+)/)[1], 10);
-    
-    const pcmData = base64ToArrayBuffer(audioData);
+    const sampleRate = parseInt(part.inlineData.mimeType.match(/rate=(\d+)/)[1], 10);
+    const pcmData = base64ToArrayBuffer(part.inlineData.data);
     const pcm16 = new Int16Array(pcmData);
     const wavBlob = pcmToWav(pcm16, 1, sampleRate);
     return URL.createObjectURL(wavBlob);
 }
 
+// --- Utility Functions for Audio ---
 function base64ToArrayBuffer(base64) {
-    const binaryString = window.atob(base64);
+    const binaryString = atob(base64);
     const len = binaryString.length;
     const bytes = new Uint8Array(len);
     for (let i = 0; i < len; i++) {
@@ -387,6 +416,11 @@ function base64ToArrayBuffer(base64) {
 function pcmToWav(pcmData, numChannels, sampleRate) {
     const buffer = new ArrayBuffer(44 + pcmData.length * 2);
     const view = new DataView(buffer);
+    const writeString = (view, offset, string) => {
+        for (let i = 0; i < string.length; i++) {
+            view.setUint8(offset + i, string.charCodeAt(i));
+        }
+    };
     writeString(view, 0, 'RIFF');
     view.setUint32(4, 36 + pcmData.length * 2, true);
     writeString(view, 8, 'WAVE');
@@ -404,10 +438,4 @@ function pcmToWav(pcmData, numChannels, sampleRate) {
         view.setInt16(44 + i * 2, pcmData[i], true);
     }
     return new Blob([view], { type: 'audio/wav' });
-}
-
-function writeString(view, offset, string) {
-    for (let i = 0; i < string.length; i++) {
-        view.setUint8(offset + i, string.charCodeAt(i));
-    }
 }
