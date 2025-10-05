@@ -111,14 +111,14 @@
                             </div>
                         </div>
 
-                        <!-- Other Options -->
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                             <div><label class="form-label">4. Rasio Gambar</label><select id="ratio-select" class="form-select"><option value="1:1">1:1 (Square)</option><option value="4:5">4:5 (Portrait)</option><option value="9:16">9:16 (Story)</option></select></div>
-                            <div>
-                                <label class="form-label">5. Latar Belakang</label>
-                                <select id="background-select" class="form-select"><option value="default">Latar Bawaan Konsep</option><option value="custom">Latar Kustom</option></select>
-                                <textarea id="custom-background-text" class="form-input mt-3 hidden" placeholder="Jelaskan latar belakang kustom..."></textarea>
-                           </div>
+                        <!-- Step 5: Latar Belakang -->
+                        <div>
+                            <label for="background-select" class="form-label">4. Latar Belakang</label>
+                            <select id="background-select" class="form-select">
+                                <option value="default">Latar Bawaan Konsep</option>
+                                <option value="custom">Latar Kustom</option>
+                            </select>
+                            <textarea id="custom-background-text" class="form-input mt-3 hidden" placeholder="Jelaskan latar belakang kustom..."></textarea>
                         </div>
                         
                         <!-- Submit Button -->
@@ -142,8 +142,8 @@
                 </div>
                 <div id="results" class="hidden space-y-6">
                     <div>
-                        <h2 class="text-xl font-semibold mb-3">📸 Foto Produk Hasil AI</h2>
-                        <div id="image-loader" class="w-full aspect-square bg-gray-200 rounded-lg skeleton flex items-center justify-center"><p class="text-gray-500">Generating gambar...</p></div>
+                        <h2 class="text-xl font-semibold mb-3">📸 Foto Produk Hasil AI (9:16)</h2>
+                        <div id="image-loader" class="w-full aspect-[9/16] bg-gray-200 rounded-lg skeleton flex items-center justify-center"><p class="text-gray-500">Generating gambar...</p></div>
                         <img id="generated-image" src="" alt="AI Generated Product" class="w-full rounded-lg shadow-sm hidden">
                     </div>
                     <div>
