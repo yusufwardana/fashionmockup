@@ -1,16 +1,184 @@
 <!DOCTYPE html>
 <html lang="id">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Fashion Content AI Studio - Vercel</title>
-  </head>
-  <body>
-    <!-- Konten React Anda akan di-mount di div dengan id="root" -->
-    <div id="root"></div>
-    
-    <!-- Script ini memuat logika aplikasi yang ada di folder src -->
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Fashion Content Simulator</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+    <!-- Admin Modal -->
+    <div id="admin-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center">
+        <div class="bg-white rounded-lg shadow-xl p-8 max-w-sm w-full relative">
+            <div id="login-view">
+                <h2 class="text-2xl font-bold mb-4 text-center">Admin Login</h2>
+                <form id="login-form">
+                    <div class="mb-4">
+                        <label for="password" class="form-label">Password</label>
+                        <input type="password" id="password" class="form-input" placeholder="••••••••">
+                    </div>
+                    <p id="login-error" class="text-red-500 text-sm mb-4 hidden">Password salah.</p>
+                    <button type="submit" class="w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">Login</button>
+                </form>
+            </div>
+            <div id="settings-view" class="hidden">
+                 <h2 class="text-2xl font-bold mb-4">API Settings</h2>
+                <div class="mb-4">
+                    <label for="api-key" class="form-label">Google AI API Key</label>
+                    <input type="text" id="api-key" class="form-input" placeholder="Masukkan API Key Anda">
+                    <p class="text-xs text-gray-500 mt-1">Dapatkan kunci dari Google AI Studio.</p>
+                </div>
+                <button id="save-settings-btn" class="w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700">Simpan & Tutup</button>
+            </div>
+             <button id="close-modal-btn" class="absolute top-4 right-4 text-gray-500 hover:text-gray-800">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="container mx-auto p-4 md:p-8">
+        <header class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-3xl md:text-4xl font-bold text-gray-900">AI Fashion Content Simulator</h1>
+                <p class="text-gray-600 mt-1">Buat visual & narasi produk fashion Anda dalam sekejap.</p>
+            </div>
+            <button id="admin-btn" class="bg-white border border-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-100 text-sm font-medium flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-settings-2"><path d="M20 7h-9"/><path d="M14 17H5"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/></svg>
+                Admin
+            </button>
+        </header>
+
+        <main class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Input Form Section -->
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <form id="content-form">
+                    <div class="space-y-6">
+                        <!-- Step 1: Upload Image -->
+                        <div>
+                            <label class="form-label">1. Upload Gambar Produk</label>
+                            <div id="image-drop-zone" class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
+                                <div class="space-y-1 text-center">
+                                    <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true"><path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 4v.01M28 8L36 16m0 0v12a4 4 0 01-4 4H12a4 4 0 01-4-4V12a4 4 0 014-4h12.586a1 1 0 01.707.293l2.414 2.414a1 1 0 00.707.293H36z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
+                                    <div class="flex text-sm text-gray-600">
+                                        <label for="product-image" class="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500"><span>Upload file</span><input id="product-image" type="file" class="sr-only" accept="image/*"></label>
+                                        <p class="pl-1">atau tarik dan lepas</p>
+                                    </div>
+                                    <p class="text-xs text-gray-500">PNG, JPG, GIF hingga 10MB</p>
+                                </div>
+                            </div>
+                            <div id="image-preview-container" class="mt-4 hidden"><p class="form-label">Preview Produk:</p><img id="image-preview" src="" alt="Image Preview" class="rounded-md object-cover max-h-40 mx-auto"/></div>
+                        </div>
+
+                        <!-- Step 2: Product Details -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div><label for="product-name" class="form-label">Nama Produk</label><input type="text" id="product-name" class="form-input" placeholder="Contoh: Urban Explorer Hoodie"></div>
+                            <div><label for="product-type" class="form-label">Jenis Produk</label><select id="product-type" class="form-select"><option>Hoodie</option><option>Kaos</option><option>Jaket</option><option>Celana</option><option>Topi</option><option>Kemeja</option></select></div>
+                        </div>
+
+                        <!-- Step 3: Photo Concept -->
+                        <div>
+                             <label class="form-label">2. Konsep Foto (Bisa pilih lebih dari satu)</label>
+                             <div class="grid grid-cols-2 md:grid-cols-3 gap-3 mt-2">
+                                 <div><input type="checkbox" name="concept" id="concept-tropical" value="Minimalis Tropis" class="sr-only" checked><label for="concept-tropical" class="custom-checkbox-label"><span class="text-2xl">🌿</span><span class="text-sm font-medium text-center">Minimalis Tropis</span></label></div>
+                                 <div><input type="checkbox" name="concept" id="concept-dramatic" value="Dramatik & Berani" class="sr-only"><label for="concept-dramatic" class="custom-checkbox-label"><span class="text-2xl">🔥</span><span class="text-sm font-medium text-center">Dramatik & Berani</span></label></div>
+                                 <div><input type="checkbox" name="concept" id="concept-elegant" value="Elegan & Profesional" class="sr-only"><label for="concept-elegant" class="custom-checkbox-label"><span class="text-2xl">✨</span><span class="text-sm font-medium text-center">Elegan & Profesional</span></label></div>
+                                 <div><input type="checkbox" name="concept" id="concept-streetwear" value="Urban Streetwear" class="sr-only"><label for="concept-streetwear" class="custom-checkbox-label"><span class="text-2xl">🏙️</span><span class="text-sm font-medium text-center">Urban Streetwear</span></label></div>
+                                 <div><input type="checkbox" name="concept" id="concept-studio" value="Studio Minimalis" class="sr-only"><label for="concept-studio" class="custom-checkbox-label"><span class="text-2xl">🧱</span><span class="text-sm font-medium text-center">Studio Minimalis</span></label></div>
+                             </div>
+                        </div>
+                        
+                        <!-- Step 4: Opsi Kustom -->
+                        <div>
+                            <label class="form-label">3. Opsi Kustom Model</label>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div><input type="radio" name="model" id="model-pria" value="Pria" class="sr-only" checked><label for="model-pria" class="custom-radio-button">Pria</label></div>
+                                <div><input type="radio" name="model" id="model-wanita" value="Wanita" class="sr-only"><label for="model-wanita" class="custom-radio-button">Wanita</label></div>
+                                <div class="col-span-2"><input type="radio" name="model" id="model-referensi" value="Referensi" class="sr-only"><label for="model-referensi" class="custom-radio-button">Referensi Wajah</label></div>
+                            </div>
+                            <div id="face-reference-container" class="mt-4 hidden">
+                                <label for="face-image" class="form-label">Upload Foto Wajah (close-up)</label>
+                                <input type="file" id="face-image" class="form-input" accept="image/*">
+                                <div id="face-preview-container" class="mt-2 hidden text-center"><img id="face-preview" src="" alt="Face Preview" class="rounded-md object-cover max-h-32 mx-auto"/></div>
+                            </div>
+                        </div>
+
+                        <!-- Other Options -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                             <div><label class="form-label">4. Rasio Gambar</label><select id="ratio-select" class="form-select"><option value="1:1">1:1 (Square)</option><option value="4:5">4:5 (Portrait)</option><option value="9:16">9:16 (Story)</option></select></div>
+                            <div>
+                                <label class="form-label">5. Latar Belakang</label>
+                                <select id="background-select" class="form-select"><option value="default">Latar Bawaan Konsep</option><option value="custom">Latar Kustom</option></select>
+                                <textarea id="custom-background-text" class="form-input mt-3 hidden" placeholder="Jelaskan latar belakang kustom..."></textarea>
+                           </div>
+                        </div>
+                        
+                        <!-- Submit Button -->
+                        <div>
+                           <button id="generate-btn" type="submit" class="w-full flex justify-center items-center gap-3 py-3 px-4 rounded-md shadow-sm text-base font-medium text-white bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300">
+                                <span id="btn-text">Generate Konten</span>
+                                <div id="btn-spinner" class="spinner h-5 w-5 rounded-full border-2 border-t-2 border-white hidden"></div>
+                            </button>
+                            <p id="error-message" class="text-red-500 text-sm mt-3 text-center"></p>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Output Section -->
+            <div id="output-container" class="bg-white p-6 rounded-lg shadow-md">
+                <div id="placeholder" class="text-center text-gray-500 h-full flex flex-col justify-center items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-wand-2 mb-4"><path d="m21.64 3.64-1.28-1.28a1.21 1.21 0 0 0-1.72 0L2.36 18.64a1.21 1.21 0 0 0 0 1.72l1.28 1.28a1.21 1.21 0 0 0 1.72 0L21.64 5.36a1.21 1.21 0 0 0 0-1.72Z"/><path d="m14 7 3 3"/><path d="M5 6v4"/><path d="M19 14v4"/><path d="M10 2v2"/><path d="M7 8H3"/><path d="M21 16h-4"/><path d="M11 3H9"/></svg>
+                    <h3 class="text-lg font-medium">Hasil Generasi AI Anda</h3>
+                    <p class="mt-1">Konten yang dihasilkan akan muncul di sini.</p>
+                </div>
+                <div id="results" class="hidden space-y-6">
+                    <div>
+                        <h2 class="text-xl font-semibold mb-3">📸 Foto Produk Hasil AI</h2>
+                        <div id="image-loader" class="w-full aspect-square bg-gray-200 rounded-lg skeleton flex items-center justify-center"><p class="text-gray-500">Generating gambar...</p></div>
+                        <img id="generated-image" src="" alt="AI Generated Product" class="w-full rounded-lg shadow-sm hidden">
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-semibold mb-3">📝 Deskripsi TikTok</h2>
+                        <div id="caption-loader" class="space-y-2"><div class="h-4 bg-gray-200 rounded w-full skeleton"></div><div class="h-4 bg-gray-200 rounded w-5/6 skeleton"></div></div>
+                        <p id="tiktok-caption" class="text-gray-700 bg-gray-100 p-4 rounded-md hidden whitespace-pre-wrap"></p>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-semibold mb-3">💬 Narasi Promosi (±20s)</h2>
+                         <div id="narrative-loader" class="space-y-2"><div class="h-4 bg-gray-200 rounded w-full skeleton"></div><div class="h-4 bg-gray-200 rounded w-full skeleton"></div><div class="h-4 bg-gray-200 rounded w-3/4 skeleton"></div></div>
+                        <p id="narrative-text" class="text-gray-700 bg-gray-100 p-4 rounded-md hidden whitespace-pre-wrap"></p>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-semibold mb-3">🔊 Audio Narasi</h2>
+                        <div class="space-y-4">
+                            <div>
+                                <p class="font-medium text-sm mb-1">Suara Pria (Santai & Percaya Diri)</p>
+                                 <div id="audio-male-loader" class="h-12 bg-gray-200 rounded-full skeleton flex items-center px-4"><p class="text-gray-500 text-sm">Generating audio...</p></div>
+                                <audio id="audio-player-male" controls class="w-full hidden"></audio>
+                            </div>
+                            <div>
+                                <p class="font-medium text-sm mb-1">Suara Wanita (Lembut & Enerjik)</p>
+                                <div id="audio-female-loader" class="h-12 bg-gray-200 rounded-full skeleton flex items-center px-4"><p class="text-gray-500 text-sm">Generating audio...</p></div>
+                                <audio id="audio-player-female" controls class="w-full hidden"></audio>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Custom JavaScript -->
+    <script src="script.js" type="module"></script>
+</body>
 </html>
+
+
