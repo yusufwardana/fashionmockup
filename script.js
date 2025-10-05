@@ -147,8 +147,17 @@ form.addEventListener('submit', async (e) => {
 });
 
 // --- Admin Modal Logic ---
-adminBtn.addEventListener('click', () => adminModal.style.display = 'flex');
+adminBtn.addEventListener('click', () => {
+    // *** FIX: Reset the modal state every time it's opened ***
+    passwordInput.value = ''; // Clear password field
+    loginError.classList.add('hidden'); // Hide any previous errors
+    loginView.classList.remove('hidden'); // Always show login view first
+    settingsView.classList.add('hidden'); // Hide settings view
+    adminModal.style.display = 'flex'; // Show the modal
+});
+
 closeModalBtn.addEventListener('click', () => adminModal.style.display = 'none');
+
 saveSettingsBtn.addEventListener('click', () => { 
     localStorage.setItem('geminiApiKey', apiKeyInput.value);
     adminModal.style.display = 'none'; 
@@ -156,6 +165,7 @@ saveSettingsBtn.addEventListener('click', () => {
 
 loginForm.addEventListener('submit', (e) => {
     e.preventDefault();
+    // The correct password is 'admin123'
     if (passwordInput.value === 'admin123') {
         loginView.classList.add('hidden');
         settingsView.classList.remove('hidden');
@@ -176,7 +186,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function getApiKey() { 
     const key = localStorage.getItem('geminiApiKey');
-    if (!key) {
+    if (!key || key.trim() === '') {
         errorMessage.textContent = 'API Key belum diatur. Silakan atur di menu Admin.';
         throw new Error('API Key is not set.');
     }
